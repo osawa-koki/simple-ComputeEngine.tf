@@ -1,6 +1,6 @@
-# simple-VM.tf
+# simple-ComputeEngine.tf
 
-🦇🦇🦇 TerraformでGCP上に`Compute Engine`を立ち上げるサンプルです。  
+🏵️🏵️🏵️ TerraformでGCP上に`Compute Engine`を立ち上げるサンプルです。  
 
 ![成果物](./docs/img/fruit.gif)  
 

@@ -9,7 +9,7 @@
 | Name | Version |
 | ---- | ---- |
 | terraform | v1.3.7 |
-| gcloud CLI |  |
+| Google Cloud SDK | 418.0.0 |
 
 ## 実行方法
 
@@ -71,11 +71,10 @@ export PATH=$PATH:/★パス★
 ### gcloud CLI
 
 [公式サイト](https://learn.microsoft.com/ja-jp/cli/azure/install-azure-cli)にそって、gcloud CLIをインストールしてください。  
+Windowsユーザは以下のコマンドを実行すればOKです。  
 
-インストール後は、以下のコマンドを実行して、Azureへログインしてください。  
-
-```shell
-az login
+```powershell
+(New-Object Net.WebClient).DownloadFile("https://dl.google.com/dl/cloudsdk/channels/rapid/GoogleCloudSDKInstaller.exe", "$env:Temp\GoogleCloudSDKInstaller.exe") & $env:Temp\GoogleCloudSDKInstaller.exe
 ```
 
 ## 参考文献

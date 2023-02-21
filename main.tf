@@ -1,139 +1,38 @@
 
-variable "project_name" {
-  type        = string
-  default     = "simple-vm-instance"
-  description = "Name of the project."
+resource "google_compute_network" "vpc_network" {
+  name                    = "my-custom-mode-network"
+  auto_create_subnetworks = false
+  mtu                     = 1460
 }
 
-variable "ssh_public_key_path" {
-  type        = string
-  default     = "~/.ssh/id_rsa.pub"
-  description = "Path to the public key."
+resource "google_compute_subnetwork" "default" {
+  name          = "my-custom-subnet"
+  ip_cidr_range = "10.0.1.0/24"
+  region        = "us-west1"
+  network       = google_compute_network.vpc_network.id
 }
 
-variable "allowed_ip_addresses" {
-  type        = list(string)
-  description = "IP addresses allowed to access the instance."
-}
+# Create a single Compute Engine instance
+resource "google_compute_instance" "default" {
+  name         = "flask-vm"
+  machine_type = "f1-micro"
+  zone         = "us-west1-a"
+  tags         = ["ssh"]
 
-provider "azurerm" {
-  features {}
-}
-
-resource "azurerm_resource_group" "example" {
-  name     = "${var.project_name}-rg"
-  location = "japaneast"
-}
-
-resource "azurerm_virtual_network" "example" {
-  name                = "${var.project_name}-vnet"
-  address_space       = ["10.0.0.0/16"]
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
-}
-
-resource "azurerm_subnet" "example" {
-  name                 = "${var.project_name}-subnet"
-  address_prefixes     = ["10.0.1.0/24"]
-  virtual_network_name = azurerm_virtual_network.example.name
-  resource_group_name  = azurerm_resource_group.example.name
-}
-
-resource "azurerm_public_ip" "example" {
-  name                = "${var.project_name}-public-ip"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
-  allocation_method   = "Dynamic"
-}
-
-resource "azurerm_network_security_group" "example" {
-  name                = "${var.project_name}-security-group"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
-
-  security_rule {
-    name                       = "Allow-SSH"
-    priority                   = 1001
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefixes    = var.allowed_ip_addresses
-    destination_address_prefix = "*"
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-11"
+    }
   }
 
-  security_rule {
-    name                       = "Allow-HTTP"
-    priority                   = 1002
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "80"
-    source_address_prefixes    = ["0.0.0.0/0"]
-    destination_address_prefix = "*"
+  # Install Flask
+  metadata_startup_script = "sudo apt-get update; sudo apt-get install -yq build-essential python3-pip rsync; pip install flask"
+
+  network_interface {
+    subnetwork = google_compute_subnetwork.default.id
+
+    access_config {
+      # Include this section to give the VM an external IP address
+    }
   }
-
-  security_rule {
-    name                       = "Allow-HTTPS"
-    priority                   = 1003
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "443"
-    source_address_prefixes    = ["0.0.0.0/0"]
-    destination_address_prefix = "*"
-  }
-}
-
-resource "azurerm_network_interface" "example" {
-  name                = "${var.project_name}-nic"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
-
-  ip_configuration {
-    name                          = "example"
-    subnet_id                     = azurerm_subnet.example.id
-    public_ip_address_id          = azurerm_public_ip.example.id
-    private_ip_address_allocation = "Dynamic"
-  }
-
-  tags = {
-    name = var.project_name
-  }
-}
-
-resource "azurerm_linux_virtual_machine" "example" {
-  name                = "example-machine"
-  resource_group_name = azurerm_resource_group.example.name
-  location            = azurerm_resource_group.example.location
-  size                = "Standard_F2"
-  admin_username      = "ubuntu"
-  network_interface_ids = [
-    azurerm_network_interface.example.id,
-  ]
-
-  admin_ssh_key {
-    username   = "ubuntu"
-    public_key = file(var.ssh_public_key_path)
-  }
-
-  os_disk {
-    caching              = "ReadWrite"
-    storage_account_type = "Standard_LRS"
-  }
-
-  source_image_reference {
-    publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "18.04-LTS"
-    version   = "latest"
-  }
-}
-
-// IPアドレスを出力
-output "public_ip_address" {
-  value = azurerm_public_ip.example.ip_address
 }

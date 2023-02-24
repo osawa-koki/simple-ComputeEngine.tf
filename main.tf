@@ -21,14 +21,9 @@ variable "allowed_ip_addresses" {
   description = "IP addresses allowed to access the instance."
 }
 
-variable "region" {
-  type        = string
-  default     = "asia-northeast1"
-}
-
 provider "google" {
   project = var.project_id
-  region  = var.region
+  region  = "us-central1"
 }
 
 resource "google_compute_network" "example" {
@@ -65,14 +60,16 @@ resource "google_compute_firewall" "example_http" {
 
 resource "google_compute_instance" "example" {
   name         = "${var.project_name}-vm"
-  machine_type = "f1-micro"
-  zone         = var.region
+  machine_type = "e2-micro"
+  zone         = "us-central1-a"
 
   boot_disk {
     initialize_params {
-      image = "debian-cloud/debian-10"
+      image = "debian-cloud/debian-11"
     }
   }
+
+  metadata_startup_script = "sudo apt update"
 
   metadata = {
     ssh-keys = "my-user:${file(var.ssh_public_key_path)}"
@@ -82,13 +79,6 @@ resource "google_compute_instance" "example" {
     subnetwork = google_compute_subnetwork.example.self_link
 
     access_config {
-      nat_ip = google_compute_address.example.address
     }
   }
-
-  tags = [var.project_name]
-}
-
-resource "google_compute_address" "example" {
-  name = "${var.project_name}-address"
 }

@@ -17,8 +17,8 @@ variable "allowed_ip_addresses" {
 }
 
 provider "google" {
-  project = "my-project-id"
-  region  = "us-central1"
+  project = var.project_name
+  region  = "asia-northeast1"
 }
 
 resource "google_compute_network" "example" {

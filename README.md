@@ -77,6 +77,14 @@ Windowsユーザは以下のコマンドを実行すればOKです。
 (New-Object Net.WebClient).DownloadFile("https://dl.google.com/dl/cloudsdk/channels/rapid/GoogleCloudSDKInstaller.exe", "$env:Temp\GoogleCloudSDKInstaller.exe") & $env:Temp\GoogleCloudSDKInstaller.exe
 ```
 
+```shell
+# ログイン
+gcloud auth login
+
+# プロジェクトの変更
+gcloud config set project PROJECT_ID
+```
+
 ## 参考文献
 
 * [Google (Terraform)](https://cloud.google.com/docs/terraform?hl=ja)

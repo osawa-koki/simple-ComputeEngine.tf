@@ -1,8 +1,8 @@
 
-variable "project_name" {
+variable "project_id" {
   type        = string
   default     = "simple-gce-instance"
-  description = "Name of the project."
+  description = "Id of the project."
 }
 
 variable "ssh_public_key_path" {
@@ -17,7 +17,7 @@ variable "allowed_ip_addresses" {
 }
 
 provider "google" {
-  project = var.project_name
+  project = var.project_id
   region  = "asia-northeast1"
 }
 

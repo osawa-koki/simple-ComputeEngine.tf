@@ -1,38 +1,83 @@
 
-resource "google_compute_network" "vpc_network" {
-  name                    = "my-custom-mode-network"
-  auto_create_subnetworks = false
-  mtu                     = 1460
+variable "project_name" {
+  type        = string
+  default     = "simple-gce-instance"
+  description = "Name of the project."
 }
 
-resource "google_compute_subnetwork" "default" {
-  name          = "my-custom-subnet"
+variable "ssh_public_key_path" {
+  type        = string
+  default     = "~/.ssh/id_rsa.pub"
+  description = "Path to the public key."
+}
+
+variable "allowed_ip_addresses" {
+  type        = list(string)
+  description = "IP addresses allowed to access the instance."
+}
+
+provider "google" {
+  project = "my-project-id"
+  region  = "us-central1"
+}
+
+resource "google_compute_network" "example" {
+  name = "example-network"
+}
+
+resource "google_compute_subnetwork" "example" {
+  name          = "example-subnetwork"
   ip_cidr_range = "10.0.1.0/24"
-  region        = "us-west1"
-  network       = google_compute_network.vpc_network.id
+  network       = google_compute_network.example.self_link
 }
 
-# Create a single Compute Engine instance
-resource "google_compute_instance" "default" {
-  name         = "flask-vm"
+resource "google_compute_firewall" "example_ssh" {
+  name    = "example-firewall"
+  network = google_compute_network.example.name
+  source_ranges = var.allowed_ip_addresses
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+}
+
+resource "google_compute_firewall" "example_http" {
+  name    = "example-firewall"
+  network = google_compute_network.example.name
+
+  source_ranges = ["0.0.0.0/0"]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["80", "443"]
+  }
+}
+
+resource "google_compute_instance" "example" {
+  name         = var.project_name
   machine_type = "f1-micro"
-  zone         = "us-west1-a"
-  tags         = ["ssh"]
 
   boot_disk {
     initialize_params {
-      image = "debian-cloud/debian-11"
+      image = "debian-cloud/debian-10"
     }
   }
 
-  # Install Flask
-  metadata_startup_script = "sudo apt-get update; sudo apt-get install -yq build-essential python3-pip rsync; pip install flask"
+  metadata = {
+    ssh-keys = "my-user:${file(var.ssh_public_key_path)}"
+  }
 
   network_interface {
-    subnetwork = google_compute_subnetwork.default.id
+    subnetwork = google_compute_subnetwork.example.self_link
 
     access_config {
-      # Include this section to give the VM an external IP address
+      nat_ip = google_compute_address.example.address
     }
   }
+
+  tags = [var.project_name]
+}
+
+resource "google_compute_address" "example" {
+  name = "example-address"
 }

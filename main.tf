@@ -1,8 +1,13 @@
 
 variable "project_id" {
   type        = string
-  default     = "simple-gce-instance"
   description = "Id of the project."
+}
+
+variable "project_name" {
+  type        = string
+  default     = "simple-gcp-cloud-engine"
+  description = "Name of the project."
 }
 
 variable "ssh_public_key_path" {

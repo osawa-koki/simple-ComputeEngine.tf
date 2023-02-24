@@ -1,6 +1,6 @@
-# simple-VM.tf
+# simple-ComputeEngine.tf
 
-🦇🦇🦇 TerraformでAWS上にEC2を立ち上げるサンプルです。  
+🏵️🏵️🏵️ TerraformでGCP上に`Compute Engine`を立ち上げるサンプルです。  
 
 ![成果物](./docs/img/fruit.gif)  
 
@@ -9,7 +9,7 @@
 | Name | Version |
 | ---- | ---- |
 | terraform | v1.3.7 |
-| Azure CLI | 2.44.1 |
+| Google Cloud SDK | 418.0.0 |
 
 ## 実行方法
 
@@ -57,12 +57,34 @@ $env:PATH += ";C:/★パス★"
 export PATH=$PATH:/★パス★
 ```
 
-### Azure CLI
+### GCPの設定
 
-[公式サイト](https://learn.microsoft.com/ja-jp/cli/azure/install-azure-cli)にそって、Azure CLIをインストールしてください。  
+[プロジェクト セレクタに移動](https://console.cloud.google.com/projectselector2/home/dashboard?hl=ja)から、対象のプロジェクトを選択します。  
 
-インストール後は、以下のコマンドを実行して、Azureへログインしてください。  
+次に、[IAMページ](https://console.cloud.google.com/iam-admin/iam?hl=ja)から、以下の権限が付与されていることを確認してください。  
+
+* compute.instance.*
+* compute.firewalls.*
+
+最後に[API を有効にする](https://console.cloud.google.com/flows/enableapi?apiid=compute.googleapis.com&hl=ja)から、`Compute Engine API`を有効にしてください。  
+
+### gcloud CLI
+
+[公式サイト](https://learn.microsoft.com/ja-jp/cli/azure/install-azure-cli)にそって、gcloud CLIをインストールしてください。  
+Windowsユーザは以下のコマンドを実行すればOKです。  
+
+```powershell
+(New-Object Net.WebClient).DownloadFile("https://dl.google.com/dl/cloudsdk/channels/rapid/GoogleCloudSDKInstaller.exe", "$env:Temp\GoogleCloudSDKInstaller.exe") & $env:Temp\GoogleCloudSDKInstaller.exe
+```
 
 ```shell
-az login
+# ログイン
+gcloud auth login
+
+# プロジェクトの変更
+gcloud config set project PROJECT_ID
 ```
+
+## 参考文献
+
+* [Google (Terraform)](https://cloud.google.com/docs/terraform?hl=ja)

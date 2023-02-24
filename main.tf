@@ -1,7 +1,12 @@
 
+variable "project_id" {
+  type        = string
+  description = "Id of the project."
+}
+
 variable "project_name" {
   type        = string
-  default     = "simple-vm-instance"
+  default     = "simple-gcp-cloud-engine"
   description = "Name of the project."
 }
 
@@ -16,124 +21,69 @@ variable "allowed_ip_addresses" {
   description = "IP addresses allowed to access the instance."
 }
 
-provider "azurerm" {
-  features {}
+provider "google" {
+  project = var.project_id
+  region  = "us-central1"
 }
 
-resource "azurerm_resource_group" "example" {
-  name     = "${var.project_name}-rg"
-  location = "japaneast"
+resource "google_compute_network" "example" {
+  name = "${var.project_name}-network"
 }
 
-resource "azurerm_virtual_network" "example" {
-  name                = "${var.project_name}-vnet"
-  address_space       = ["10.0.0.0/16"]
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
+resource "google_compute_subnetwork" "example" {
+  name          = "${var.project_name}-subnet"
+  ip_cidr_range = "10.0.1.0/24"
+  network       = google_compute_network.example.self_link
 }
 
-resource "azurerm_subnet" "example" {
-  name                 = "${var.project_name}-subnet"
-  address_prefixes     = ["10.0.1.0/24"]
-  virtual_network_name = azurerm_virtual_network.example.name
-  resource_group_name  = azurerm_resource_group.example.name
-}
-
-resource "azurerm_public_ip" "example" {
-  name                = "${var.project_name}-public-ip"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
-  allocation_method   = "Dynamic"
-}
-
-resource "azurerm_network_security_group" "example" {
-  name                = "${var.project_name}-security-group"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
-
-  security_rule {
-    name                       = "Allow-SSH"
-    priority                   = 1001
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefixes    = var.allowed_ip_addresses
-    destination_address_prefix = "*"
-  }
-
-  security_rule {
-    name                       = "Allow-HTTP"
-    priority                   = 1002
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "80"
-    source_address_prefixes    = ["0.0.0.0/0"]
-    destination_address_prefix = "*"
-  }
-
-  security_rule {
-    name                       = "Allow-HTTPS"
-    priority                   = 1003
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "443"
-    source_address_prefixes    = ["0.0.0.0/0"]
-    destination_address_prefix = "*"
+resource "google_compute_firewall" "example_ssh" {
+  name    = "${var.project_name}-firewall-ssh"
+  network = google_compute_network.example.name
+  source_ranges = var.allowed_ip_addresses
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
   }
 }
 
-resource "azurerm_network_interface" "example" {
-  name                = "${var.project_name}-nic"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
+resource "google_compute_firewall" "example_http" {
+  name    = "${var.project_name}-firewall-http"
+  network = google_compute_network.example.name
 
-  ip_configuration {
-    name                          = "example"
-    subnet_id                     = azurerm_subnet.example.id
-    public_ip_address_id          = azurerm_public_ip.example.id
-    private_ip_address_allocation = "Dynamic"
-  }
+  source_ranges = ["0.0.0.0/0"]
 
-  tags = {
-    name = var.project_name
+  allow {
+    protocol = "tcp"
+    ports    = ["80", "443"]
   }
 }
 
-resource "azurerm_linux_virtual_machine" "example" {
-  name                = "example-machine"
-  resource_group_name = azurerm_resource_group.example.name
-  location            = azurerm_resource_group.example.location
-  size                = "Standard_F2"
-  admin_username      = "ubuntu"
-  network_interface_ids = [
-    azurerm_network_interface.example.id,
-  ]
+resource "google_compute_instance" "example" {
+  name         = "${var.project_name}-vm"
+  machine_type = "e2-micro"
+  zone         = "us-central1-a"
 
-  admin_ssh_key {
-    username   = "ubuntu"
-    public_key = file(var.ssh_public_key_path)
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-11"
+    }
   }
 
-  os_disk {
-    caching              = "ReadWrite"
-    storage_account_type = "Standard_LRS"
+  metadata_startup_script = "sudo apt update"
+
+  metadata = {
+    ssh-keys = "my-user:${file(var.ssh_public_key_path)}"
   }
 
-  source_image_reference {
-    publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "18.04-LTS"
-    version   = "latest"
+  network_interface {
+    subnetwork = google_compute_subnetwork.example.self_link
+
+    access_config {
+    }
   }
 }
 
 // IPアドレスを出力
-output "public_ip_address" {
-  value = azurerm_public_ip.example.ip_address
+output "ip_address" {
+  value = google_compute_instance.example.network_interface[0].access_config[0].nat_ip
 }

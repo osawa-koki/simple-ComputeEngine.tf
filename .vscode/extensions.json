@@ -2,6 +2,6 @@
   "recommendations": [
     "4ops.terraform",
     "hashicorp.terraform",
-    "ms-vscode.vscode-node-azure-pack"
+    "googlecloudtools.cloudcode"
   ]
 }

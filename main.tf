@@ -21,23 +21,28 @@ variable "allowed_ip_addresses" {
   description = "IP addresses allowed to access the instance."
 }
 
+variable "region" {
+  type        = string
+  default     = "asia-northeast1"
+}
+
 provider "google" {
   project = var.project_id
-  region  = "asia-northeast1"
+  region  = var.region
 }
 
 resource "google_compute_network" "example" {
-  name = "example-network"
+  name = "${var.project_name}-network"
 }
 
 resource "google_compute_subnetwork" "example" {
-  name          = "example-subnetwork"
+  name          = "${var.project_name}-subnet"
   ip_cidr_range = "10.0.1.0/24"
   network       = google_compute_network.example.self_link
 }
 
 resource "google_compute_firewall" "example_ssh" {
-  name    = "example-firewall"
+  name    = "${var.project_name}-firewall-ssh"
   network = google_compute_network.example.name
   source_ranges = var.allowed_ip_addresses
   allow {
@@ -47,7 +52,7 @@ resource "google_compute_firewall" "example_ssh" {
 }
 
 resource "google_compute_firewall" "example_http" {
-  name    = "example-firewall"
+  name    = "${var.project_name}-firewall-http"
   network = google_compute_network.example.name
 
   source_ranges = ["0.0.0.0/0"]
@@ -59,8 +64,9 @@ resource "google_compute_firewall" "example_http" {
 }
 
 resource "google_compute_instance" "example" {
-  name         = var.project_name
+  name         = "${var.project_name}-vm"
   machine_type = "f1-micro"
+  zone         = var.region
 
   boot_disk {
     initialize_params {
@@ -84,5 +90,5 @@ resource "google_compute_instance" "example" {
 }
 
 resource "google_compute_address" "example" {
-  name = "example-address"
+  name = "${var.project_name}-address"
 }
